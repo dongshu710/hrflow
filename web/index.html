@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<title>hrflow · 人事流程</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <span class="mark">hr</span>
+      <span class="brand-name">hrflow</span>
+      <span class="brand-sub">人事流程</span>
+    </div>
+    <div class="org">
+      <span id="orgName">示例科技有限公司</span>
+      <span class="org-time" id="orgUpdated"></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="kpis" id="cards" aria-label="关键指标"></section>
+
+  <nav class="segmented" role="tablist" aria-label="功能切换">
+    <button class="seg active" role="tab" data-tab="employees">花名册</button>
+    <button class="seg" role="tab" data-tab="apply">发起请假</button>
+    <button class="seg" role="tab" data-tab="approve">审批台<span class="count" id="pendingCount"></span></button>
+    <button class="seg" role="tab" data-tab="stats">统计</button>
+  </nav>
+
+  <!-- 花名册 -->
+  <section class="panel active" id="tab-employees" role="tabpanel">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">员工花名册</h2>
+        <p class="panel-meta" id="empMeta"></p>
+      </div>
+      <div class="actions">
+        <input class="input search" id="kw" type="search" placeholder="搜索姓名 / 工号 / 岗位" aria-label="搜索员工">
+        <select class="input" id="statusFilter" aria-label="按状态筛选">
+          <option value="">全部状态</option>
+          <option value="active">在职</option>
+          <option value="probation">试用期</option>
+          <option value="resigned">已离职</option>
+        </select>
+        <button class="btn primary" id="btnNewEmp">新员工入职</button>
+      </div>
+    </div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>工号</th><th>姓名</th><th>部门</th><th>岗位</th>
+          <th>直属上级</th><th>入职日期</th><th>状态</th><th class="cell-actions">操作</th>
+        </tr>
+      </thead>
+      <tbody id="empRows"></tbody>
+    </table>
+  </section>
+
+  <!-- 发起请假 -->
+  <section class="panel" id="tab-apply" role="tabpanel">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">发起请假</h2>
+        <p class="panel-meta">提交后按天数与假别自动路由审批链</p>
+      </div>
+    </div>
+
+    <div class="form">
+      <div class="form-grid">
+        <label class="field"><span>申请人</span><select id="fEmp"></select></label>
+        <label class="field"><span>假别</span><select id="fType"></select></label>
+        <label class="field"><span>开始日期</span><input type="date" id="fStart"></label>
+        <label class="field"><span>结束日期</span><input type="date" id="fEnd"></label>
+        <label class="field full-sm"><span>证明材料</span>
+          <select id="fAttach"><option value="0">未上传</option><option value="1">已上传</option></select>
+        </label>
+        <label class="field full"><span>事由</span><input type="text" id="fReason" placeholder="一句话说明即可"></label>
+      </div>
+      <div class="form-foot">
+        <span class="hint" id="calcHint"></span>
+        <div class="actions">
+          <button class="btn" id="btnPrecheck">智能预审</button>
+          <button class="btn primary" id="btnSubmit">提交申请</button>
+        </div>
+      </div>
+      <div class="review" id="precheckResult"></div>
+      <div class="msg" id="applyMsg"></div>
+    </div>
+
+    <p class="section-label">我的请假记录</p>
+    <table class="table">
+      <thead>
+        <tr><th>单号</th><th>申请人</th><th>假别</th><th>请假区间</th><th class="num">天数</th><th>状态</th><th>进度</th></tr>
+      </thead>
+      <tbody id="myRows"></tbody>
+    </table>
+  </section>
+
+  <!-- 审批台 -->
+  <section class="panel" id="tab-approve" role="tabpanel">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">审批台</h2>
+        <p class="panel-meta">按角色查看待办，越权操作会被后端拒绝</p>
+      </div>
+      <div class="actions">
+        <select class="input" id="reqFilter" aria-label="按状态筛选">
+          <option value="pending">待审批</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已驳回</option>
+          <option value="">全部状态</option>
+        </select>
+        <label class="inline-field">当前角色
+          <select class="input" id="actorRole">
+            <option value="manager">直属上级</option>
+            <option value="hr">HR 复核</option>
+            <option value="director">部门总监</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>单号</th><th>申请人</th><th>部门</th><th>假别</th><th>请假区间</th>
+          <th class="num">天数</th><th>状态</th><th>当前节点</th><th class="cell-actions">操作</th>
+        </tr>
+      </thead>
+      <tbody id="reqRows"></tbody>
+    </table>
+  </section>
+
+  <!-- 统计 -->
+  <section class="panel" id="tab-stats" role="tabpanel">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">统计与导出</h2>
+        <p class="panel-meta">用审批时长与部门分布判断流程是否顺畅</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnExportRoster">导出花名册</button>
+        <button class="btn" id="btnExportLeave">导出请假明细</button>
+      </div>
+    </div>
+    <p class="hint" id="exportHint"></p>
+
+    <div class="split">
+      <div>
+        <p class="section-label">部门请假分布</p>
+        <table class="table tabular">
+          <thead><tr><th>部门</th><th class="num">单据</th><th class="num">已通过</th><th class="num">已通过天数</th></tr></thead>
+          <tbody id="deptRows"></tbody>
+        </table>
+      </div>
+      <div>
+        <p class="section-label">月度趋势</p>
+        <table class="table tabular">
+          <thead><tr><th>月份</th><th class="num">单据</th><th class="num">天数</th></tr></thead>
+          <tbody id="monthRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="app-foot">
+  <div class="wrap">Python 标准库 + SQLite · 零第三方依赖 · 数据存于 data/hrflow.db</div>
+</footer>
+
+<!-- 通用弹窗：员工详情 / 单据详情 / 新建表单共用 -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h3 id="modalTitle">详情</h3>
+      <button class="icon-btn" data-close aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

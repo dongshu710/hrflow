@@ -1,0 +1,8 @@
+# 统一换行符，避免 Windows 上提交后 diff 全红
+* text=auto eol=lf
+*.py text
+*.md text
+*.js text
+*.css text
+*.html text
+*.sql text

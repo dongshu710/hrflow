@@ -1,0 +1,37 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Windows 运行器默认 cp1252，中文输出会抛 UnicodeEncodeError
+env:
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  test:
+    name: py${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.9", "3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: 单元测试
+        run: python -m unittest discover -s tests -v
+
+      - name: 冒烟：生成演示数据并导出报表
+        run: |
+          python scripts/seed.py
+          python -c "from hrflow.repository.db import connect; from hrflow.services import report_service; print(report_service.overview(connect()))"
